@@ -593,7 +593,8 @@
                 if (framesUntilNextSpike <= 0) {
                     // 65% chance for a massive spike! 🏔️
                     let isTall = Math.random() > 0.35;
-                    let obsHeight = isTall ? 55 + Math.random() * 35 : 20 + Math.random() * 25; 
+                    // Adjusted massive spike height to be a little shorter! 📉
+                    let obsHeight = isTall ? 45 + Math.random() * 30 : 20 + Math.random() * 25; 
                     obstacles.push({ type: 'spike', x: canvas.width, y: canvas.height - 20 - obsHeight, width: 20 + Math.random() * 15, height: obsHeight, speed: currentSpeed });
                     
                     let minGap = 35; 

@@ -587,11 +587,23 @@
             if (frameCount < 1700) {
                 framesUntilNextSpike--;
                 if (framesUntilNextSpike <= 0) {
-                    let obsHeight = 30 + Math.random() * 45; // Taller spikes!
-                    
                     // SPEED TWEAK: Slightly faster base speed (6.0 instead of 5.5) but still fair! 🏎️💨
                     let currentSpeed = 6.0 + (frameCount / 300); 
-                    obstacles.push({ x: canvas.width, y: canvas.height - 20 - obsHeight, width: 20 + Math.random() * 15, height: obsHeight, speed: currentSpeed });
+                    
+                    // NEW MECHANIC: 30% chance to spawn a cursed flying orb! 🦅👻
+                    let isOrb = Math.random() > 0.7;
+
+                    if (isOrb) {
+                        let orbSize = 24 + Math.random() * 10;
+                        // Spawns high up so you have to avoid jumping into it!
+                        let orbY = canvas.height - 20 - 70 - Math.random() * 45; 
+                        obstacles.push({ type: 'orb', x: canvas.width, y: orbY, width: orbSize, height: orbSize, speed: currentSpeed * 1.15 });
+                    } else {
+                        // TALLER SPIKES MORE OFTEN! (65% chance for a massive spike!) 🏔️🗡️
+                        let isTall = Math.random() > 0.35;
+                        let obsHeight = isTall ? 55 + Math.random() * 35 : 20 + Math.random() * 25; 
+                        obstacles.push({ type: 'spike', x: canvas.width, y: canvas.height - 20 - obsHeight, width: 20 + Math.random() * 15, height: obsHeight, speed: currentSpeed });
+                    }
                     
                     // GAP TWEAK: Adjusted gaps to match the new speed! 📏
                     let minGap = 40; 
@@ -601,27 +613,43 @@
             }
 
             // Move and Draw Obstacles
-            if (isDesktop) {
-                ctx.shadowColor = "#ff0000";
-                ctx.shadowBlur = 10;
-            }
-            ctx.fillStyle = "#ff0000"; // Red spikes
-            
             for (let i = 0; i < obstacles.length; i++) {
                 let obs = obstacles[i];
                 obs.x -= obs.speed; // Speed of the spikes is now dynamic!
                 
-                // Draw jagged spike
-                ctx.beginPath();
-                ctx.moveTo(obs.x, obs.y + obs.height);
-                ctx.lineTo(obs.x + obs.width/2, obs.y);
-                ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
-                ctx.fill();
+                if (obs.type === 'spike') {
+                    if (isDesktop) {
+                        ctx.shadowColor = "#ff0000";
+                        ctx.shadowBlur = 10;
+                    }
+                    ctx.fillStyle = "#ff0000"; // Red spikes
+                    
+                    // Draw jagged spike
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y + obs.height);
+                    ctx.lineTo(obs.x + obs.width/2, obs.y);
+                    ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                    ctx.fill();
+                } else if (obs.type === 'orb') {
+                    if (isDesktop) {
+                        ctx.shadowColor = "#8a2be2"; // Purple glow for cursed orb! 🔮
+                        ctx.shadowBlur = 15;
+                    }
+                    // Draw flying cursed orb! 👁️🦇
+                    ctx.fillStyle = "#4b0082"; // Indigo
+                    ctx.beginPath();
+                    ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = "#ff0000"; // Red creepy center
+                    ctx.beginPath();
+                    ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
 
                 // Collision Detection! (Oh no!) 😭
                 if (pukuli.x < obs.x + obs.width - 5 &&
                     pukuli.x + pukuli.width > obs.x + 5 &&
-                    pukuli.y < obs.y + obs.height &&
+                    pukuli.y < obs.y + obs.height - 5 &&
                     pukuli.y + pukuli.height > obs.y + 5) {
                     // HIT! Restart progress!
                     frameCount = 0;

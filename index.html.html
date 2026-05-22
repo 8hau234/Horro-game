@@ -304,7 +304,7 @@
 
     <!-- Parkour Mini Game (Hidden initially - NOW OUTSIDE JUMPSCARE!) 🎮 -->
     <div id="game-container" class="hidden fixed inset-0 z-[1000] flex-col items-center justify-center bg-[#050505] p-4">
-        <h2 class="font-horror text-red-500 text-2xl md:text-5xl mb-4 text-center px-4">SURVIVE 10 SECONDS TO SAVE PUNTU!</h2>
+        <h2 class="font-horror text-red-500 text-2xl md:text-5xl mb-4 text-center px-4">SURVIVE 30 SECONDS TO SAVE PUNTU!</h2>
         <canvas id="game-canvas" width="600" height="300" class="cursor-pointer"></canvas>
         <p class="text-gray-400 mt-6 font-sans text-lg md:text-xl animate-bounce text-center">Tap, Click, or Spacebar anywhere to Jump! 🏃‍♀️💨</p>
     </div>
@@ -313,7 +313,8 @@
     <div id="love-screen" class="fixed inset-0 z-[1001] hidden flex flex-col justify-center items-center bg-pink-100 overflow-hidden" style="cursor: auto !important;">
         <div id="heart-container" class="absolute inset-0 pointer-events-none"></div>
         <h1 class="text-4xl md:text-5xl lg:text-7xl font-sans text-pink-600 font-extrabold text-center px-8 drop-shadow-md z-[1002] leading-tight" style="font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;">
-            AWWEEEE MY BABY PUKULI PUNTU LOVES YOU SOOSOSSOS MUCHHHH <br/>🥺💕💘💝💖🧸
+            AWWEEEE MY BABY PUKULI PUNTU LOVES YOU SOOSOSSOS MUCHHHH <br/>
+            <span class="text-2xl md:text-3xl lg:text-5xl mt-6 block text-pink-500 leading-snug">Puntu will one day marry pukuli thanks for saving me from the evil and always being for me 🥺💕💘💝💖🧸💍</span>
         </h1>
     </div>
 
@@ -337,8 +338,11 @@
         let gameLoopId;
         let isPlaying = false;
         let frameCount = 0;
+        let framesUntilNextSpike = 0; // Added for hard mode dynamic spawning!
         let obstacles = [];
-        const pukuli = { x: 50, y: 200, width: 30, height: 30, vy: 0, gravity: 0.6, jumpPower: -10.5, grounded: false };
+        
+        // Hard mode physics! Snappier jump and heavier gravity for precision! 🦘
+        const pukuli = { x: 50, y: 200, width: 30, height: 30, vy: 0, gravity: 0.7, jumpPower: -11.5, grounded: false };
         let puntu = { active: false, x: 600, y: 250, width: 30, height: 30 }; // Our trapped boy Puntu! 🥺
 
         let hitFlashAlpha = 0; // For smooth damage flashing!
@@ -498,6 +502,7 @@
                     // Start the game! 🎮
                     isPlaying = true;
                     frameCount = 0;
+                    framesUntilNextSpike = 0;
                     obstacles = [];
                     pukuli.y = 200;
                     pukuli.vy = 0;
@@ -573,10 +578,20 @@
             ctx.fillRect(pukuli.x + 10, pukuli.y + 20, 10, 4); // Mouth
 
             // Obstacle Spawner (Red Spikes!) 🩸
-            // Stop spawning spikes near the end so Puntu can safely appear!
-            if (frameCount < 480 && frameCount % 75 === 0) {
-                let obsHeight = 25 + Math.random() * 35;
-                obstacles.push({ x: canvas.width, y: canvas.height - 20 - obsHeight, width: 25, height: obsHeight });
+            // DYNAMIC DIFFICULTY: Faster, taller, and closer together as time goes on! 😱
+            if (frameCount < 1700) {
+                framesUntilNextSpike--;
+                if (framesUntilNextSpike <= 0) {
+                    let obsHeight = 30 + Math.random() * 45; // Taller spikes!
+                    // SLIGHTLY SLOWER SPEED LOGIC! 📉
+                    let currentSpeed = 5.5 + (frameCount / 350); 
+                    obstacles.push({ x: canvas.width, y: canvas.height - 20 - obsHeight, width: 20 + Math.random() * 15, height: obsHeight, speed: currentSpeed });
+                    
+                    // WIDER GAPS SO IT'S EASIER TO BREATHE! 😮‍💨
+                    let minGap = 45; 
+                    let maxGap = 95 - Math.floor(frameCount / 40); 
+                    framesUntilNextSpike = minGap + Math.random() * Math.max(10, (maxGap - minGap));
+                }
             }
 
             // Move and Draw Obstacles
@@ -586,7 +601,7 @@
             
             for (let i = 0; i < obstacles.length; i++) {
                 let obs = obstacles[i];
-                obs.x -= 7; // Speed of the spikes
+                obs.x -= obs.speed; // Speed of the spikes is now dynamic!
                 
                 // Draw jagged spike
                 ctx.beginPath();
@@ -602,6 +617,7 @@
                     pukuli.y + pukuli.height > obs.y + 5) {
                     // HIT! Restart progress!
                     frameCount = 0;
+                    framesUntilNextSpike = 0;
                     obstacles = [];
                     puntu = { active: false, x: 600, y: 250, width: 30, height: 30 }; // Reset Puntu!
                     pukuli.y = canvas.height - 20 - pukuli.height; // Slam Pukuli back to ground
@@ -622,7 +638,7 @@
             }
 
             // --- PUNTU IN A CAGE LOGIC (THE FINISH LINE!) 🥺🔒 ---
-            if (frameCount >= 500) {
+            if (frameCount >= 1700) {
                 puntu.active = true;
             }
 
@@ -668,9 +684,9 @@
                 }
             }
 
-            // Progress tracking (10 seconds at ~60fps = 600 frames)
+            // Progress tracking (30 seconds at ~60fps = 1800 frames)
             frameCount++;
-            const targetFrames = 600;
+            const targetFrames = 1800;
             let progress = Math.min(frameCount / targetFrames, 1);
             
             // Draw Progress Bar at top

@@ -339,6 +339,7 @@
         let isPlaying = false;
         let frameCount = 0;
         let framesUntilNextSpike = 0; // Added for hard mode dynamic spawning!
+        let framesUntilNextOrb = 60; // NEW: Separate timer for the Orbs! 🔮
         let obstacles = [];
         
         // Hard mode physics! Snappier jump and heavier gravity for precision! 🦘
@@ -503,6 +504,7 @@
                     isPlaying = true;
                     frameCount = 0;
                     framesUntilNextSpike = 0;
+                    framesUntilNextOrb = 60; // Reset Orb Timer!
                     obstacles = [];
                     pukuli.y = 200;
                     pukuli.vy = 0;
@@ -582,60 +584,63 @@
             ctx.fillStyle = "#ff1493"; // Deep pink mouth
             ctx.fillRect(pukuli.x + 10, pukuli.y + 20, 10, 4); // Mouth
 
-            // Obstacle Spawner (Red Spikes!) 🩸
-            // DYNAMIC DIFFICULTY: Faster, taller, and closer together as time goes on! 😱
+            // --- OBSTACLE SPAWNERS (BULLET HELL MODE!) 🩸💣 ---
             if (frameCount < 1700) {
+                let currentSpeed = 6.0 + (frameCount / 300); 
+
+                // 1. SPIKE SPAWNER 🗡️
                 framesUntilNextSpike--;
                 if (framesUntilNextSpike <= 0) {
-                    // SPEED TWEAK: Slightly faster base speed (6.0 instead of 5.5) but still fair! 🏎️💨
-                    let currentSpeed = 6.0 + (frameCount / 300); 
+                    // 65% chance for a massive spike! 🏔️
+                    let isTall = Math.random() > 0.35;
+                    let obsHeight = isTall ? 55 + Math.random() * 35 : 20 + Math.random() * 25; 
+                    obstacles.push({ type: 'spike', x: canvas.width, y: canvas.height - 20 - obsHeight, width: 20 + Math.random() * 15, height: obsHeight, speed: currentSpeed });
                     
-                    // NEW MECHANIC: 30% chance to spawn a cursed flying orb! 🦅👻
-                    let isOrb = Math.random() > 0.7;
-
-                    if (isOrb) {
-                        let orbSize = 24 + Math.random() * 10;
-                        // Spawns high up so you have to avoid jumping into it!
-                        let orbY = canvas.height - 20 - 70 - Math.random() * 45; 
-                        obstacles.push({ type: 'orb', x: canvas.width, y: orbY, width: orbSize, height: orbSize, speed: currentSpeed * 1.15 });
-                    } else {
-                        // TALLER SPIKES MORE OFTEN! (65% chance for a massive spike!) 🏔️🗡️
-                        let isTall = Math.random() > 0.35;
-                        let obsHeight = isTall ? 55 + Math.random() * 35 : 20 + Math.random() * 25; 
-                        obstacles.push({ type: 'spike', x: canvas.width, y: canvas.height - 20 - obsHeight, width: 20 + Math.random() * 15, height: obsHeight, speed: currentSpeed });
-                    }
-                    
-                    // GAP TWEAK: Adjusted gaps to match the new speed! 📏
-                    let minGap = 40; 
-                    let maxGap = 85 - Math.floor(frameCount / 35); 
+                    let minGap = 35; 
+                    let maxGap = 80 - Math.floor(frameCount / 35); 
                     framesUntilNextSpike = minGap + Math.random() * Math.max(10, (maxGap - minGap));
+                }
+
+                // 2. ORB SPAWNER 🔮 (Now completely independent from Spikes!)
+                framesUntilNextOrb--;
+                if (framesUntilNextOrb <= 0) {
+                    let orbSize = 25;
+                    let orbY = 30 + Math.random() * 60; // Spawns high in the sky!
+                    
+                    // Orbs fly a bit slower so they linger and drop more bombs! 🦅
+                    obstacles.push({ type: 'orb', x: canvas.width, y: orbY, width: orbSize, height: orbSize, speed: currentSpeed * 0.55, dropTimer: 0 });
+                    
+                    let minOrbGap = 70;
+                    let maxOrbGap = 130 - Math.floor(frameCount / 40);
+                    framesUntilNextOrb = minOrbGap + Math.random() * Math.max(20, (maxOrbGap - minOrbGap));
                 }
             }
 
             // Move and Draw Obstacles
             for (let i = 0; i < obstacles.length; i++) {
                 let obs = obstacles[i];
-                obs.x -= obs.speed; // Speed of the spikes is now dynamic!
                 
                 if (obs.type === 'spike') {
+                    obs.x -= obs.speed; // Move left
                     if (isDesktop) {
                         ctx.shadowColor = "#ff0000";
                         ctx.shadowBlur = 10;
                     }
-                    ctx.fillStyle = "#ff0000"; // Red spikes
-                    
-                    // Draw jagged spike
+                    ctx.fillStyle = "#ff0000"; 
                     ctx.beginPath();
                     ctx.moveTo(obs.x, obs.y + obs.height);
                     ctx.lineTo(obs.x + obs.width/2, obs.y);
                     ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
                     ctx.fill();
+                    
                 } else if (obs.type === 'orb') {
+                    obs.x -= obs.speed; // Move left
+                    obs.y += Math.sin(frameCount * 0.1) * 1.5; // Eerie hovering bob effect! 👻
+
                     if (isDesktop) {
-                        ctx.shadowColor = "#8a2be2"; // Purple glow for cursed orb! 🔮
+                        ctx.shadowColor = "#8a2be2"; 
                         ctx.shadowBlur = 15;
                     }
-                    // Draw flying cursed orb! 👁️🦇
                     ctx.fillStyle = "#4b0082"; // Indigo
                     ctx.beginPath();
                     ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/2, 0, Math.PI * 2);
@@ -644,16 +649,40 @@
                     ctx.beginPath();
                     ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/4, 0, Math.PI * 2);
                     ctx.fill();
+
+                    // 💣 DROP PROJECTILES! The Orb attacks! 
+                    obs.dropTimer++;
+                    if (obs.dropTimer > 40) { // Drops a bomb roughly every second
+                        obs.dropTimer = 0;
+                        obstacles.push({ type: 'projectile', x: obs.x + obs.width/2 - 6, y: obs.y + obs.height, width: 12, height: 12, vy: 5.5 });
+                    }
+
+                } else if (obs.type === 'projectile') {
+                    obs.y += obs.vy; // Fall straight down! 🩸
+                    if (isDesktop) {
+                        ctx.shadowColor = "#ff0000";
+                        ctx.shadowBlur = 10;
+                    }
+                    ctx.fillStyle = "#ff0000";
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height); // Blood square
                 }
 
+                ctx.shadowBlur = 0; // Turn glow off to save CPU
+
                 // Collision Detection! (Oh no!) 😭
-                if (pukuli.x < obs.x + obs.width - 5 &&
-                    pukuli.x + pukuli.width > obs.x + 5 &&
-                    pukuli.y < obs.y + obs.height - 5 &&
-                    pukuli.y + pukuli.height > obs.y + 5) {
+                // Adjusted shrink size dynamically so tiny projectiles still hurt!
+                let shrinkX = obs.type === 'projectile' ? 1 : 5;
+                let shrinkY = obs.type === 'projectile' ? 1 : 5;
+
+                if (pukuli.x < obs.x + obs.width - shrinkX &&
+                    pukuli.x + pukuli.width > obs.x + shrinkX &&
+                    pukuli.y < obs.y + obs.height - shrinkY &&
+                    pukuli.y + pukuli.height > obs.y + shrinkY) {
+                    
                     // HIT! Restart progress!
                     frameCount = 0;
                     framesUntilNextSpike = 0;
+                    framesUntilNextOrb = 60; // Reset Orb Timer too!
                     obstacles = [];
                     puntu = { active: false, x: 600, y: 250, width: 30, height: 30 }; // Reset Puntu!
                     pukuli.y = canvas.height - 20 - pukuli.height; // Slam Pukuli back to ground
@@ -661,10 +690,9 @@
                     hitFlashAlpha = 0.5; // Trigger smooth red damage flash!
                 }
             }
-            ctx.shadowBlur = 0; // Turn glow off to save CPU
 
-            // Clean up off-screen obstacles
-            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+            // Clean up off-screen obstacles AND fallen projectiles
+            obstacles = obstacles.filter(obs => obs.x + obs.width > 0 && obs.y < canvas.height);
 
             // Draw smooth damage flash! 🩸✨
             if (hitFlashAlpha > 0) {

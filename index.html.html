@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECHOES OF THE ABYSS | Horror Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blood-red: #8a0303;
+            --dark-red: #3a0000;
+        }
+
+        body {
+            background-color: #030303;
+            color: #d1d5db;
+            font-family: 'Special Elite', monospace;
+            cursor: none; /* Hide default cursor */
+            overflow: hidden; /* Prevent scrolling to keep claustrophobic feel */
+            user-select: none;
+        }
+
+        .font-horror {
+            font-family: 'Creepster', cursive;
+        }
+
+        /* TV Static Overlay */
+        .static-noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Flashlight Effect */
+        #flashlight {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 40;
+            /* Default center before mouse moves */
+            background: radial-gradient(circle 200px at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.98) 100%);
+            transition: background 0.1s ease;
+        }
+
+        /* Custom Blood Dot Cursor */
+        #custom-cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background-color: red;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px red, 0 0 20px darkred;
+            transition: width 0.2s, height 0.2s;
+        }
+
+        /* Glitch Text Effect */
+        .glitch {
+            position: relative;
+            color: white;
+            text-shadow: 2px 2px var(--blood-red);
+        }
+        
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #030303;
+        }
+        
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 red;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 blue;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(20px, 9999px, 86px, 0); transform: translate(-2px, 2px); }
+            10% { clip: rect(48px, 9999px, 11px, 0); transform: translate(2px, -2px); }
+            20% { clip: rect(98px, 9999px, 59px, 0); transform: translate(-2px, 2px); }
+            30% { clip: rect(12px, 9999px, 45px, 0); transform: translate(2px, -2px); }
+            40% { clip: rect(78px, 9999px, 2px, 0); transform: translate(-2px, 2px); }
+            50% { clip: rect(21px, 9999px, 99px, 0); transform: translate(2px, -2px); }
+            60% { clip: rect(66px, 9999px, 33px, 0); transform: translate(-2px, 2px); }
+            70% { clip: rect(9px, 9999px, 88px, 0); transform: translate(2px, -2px); }
+            80% { clip: rect(44px, 9999px, 55px, 0); transform: translate(-2px, 2px); }
+            90% { clip: rect(81px, 9999px, 14px, 0); transform: translate(2px, -2px); }
+            100% { clip: rect(33px, 9999px, 77px, 0); transform: translate(-2px, 2px); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); transform: translate(2px, -2px); }
+            20% { clip: rect(12px, 9999px, 44px, 0); transform: translate(-2px, 2px); }
+            40% { clip: rect(88px, 9999px, 22px, 0); transform: translate(2px, -2px); }
+            60% { clip: rect(34px, 9999px, 76px, 0); transform: translate(-2px, 2px); }
+            80% { clip: rect(99px, 9999px, 11px, 0); transform: translate(2px, -2px); }
+            100% { clip: rect(45px, 9999px, 55px, 0); transform: translate(-2px, 2px); }
+        }
+
+        /* Creepy breathing button */
+        .btn-horror {
+            border: 1px solid var(--blood-red);
+            background: transparent;
+            color: var(--blood-red);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(138, 3, 3, 0.2);
+            animation: heartbeat 2s infinite;
+        }
+        
+        .btn-horror:hover {
+            background: var(--blood-red);
+            color: black;
+            box-shadow: 0 0 30px var(--blood-red);
+            animation: none;
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            10% { transform: scale(1.03); }
+            20% { transform: scale(1); }
+            30% { transform: scale(1.03); }
+            40% { transform: scale(1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Eye styles */
+        .sclera {
+            fill: #111;
+            stroke: var(--dark-red);
+            stroke-width: 2;
+        }
+        .iris {
+            fill: var(--blood-red);
+        }
+        .pupil {
+            fill: black;
+        }
+
+        /* Jumpscare / Shake */
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both infinite;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-10px, 5px, 0) scale(1.1); filter: invert(1) hue-rotate(180deg); }
+            20%, 80% { transform: translate3d(15px, -10px, 0) scale(1.2); filter: invert(0); }
+            30%, 50%, 70% { transform: translate3d(-20px, 15px, 0) scale(1.1); filter: contrast(200%) grayscale(100%); }
+            40%, 60% { transform: translate3d(20px, -15px, 0) scale(1.3); filter: invert(1) sepia(100%) saturate(1000%) hue-rotate(-50deg); }
+        }
+
+        /* Eerie floating particles */
+        .particle {
+            position: absolute;
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 10s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.5; }
+            90% { opacity: 0.5; }
+            100% { transform: translateY(-20vh) translateX(100px); opacity: 0; }
+        }
+
+        /* Love Theme Styles 💖 */
+        .heart-float {
+            position: absolute;
+            animation: floatUp infinite ease-in;
+            z-index: 1001;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(255,105,180,0.5);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.5) rotate(-15deg); opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5) rotate(15deg); opacity: 0; }
+        }
+
+        /* Parkour Game Styles 🏃‍♀️ */
+        #game-canvas {
+            background-color: #0a0a0a;
+            border: 4px solid var(--blood-red);
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(138, 3, 3, 0.5);
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            aspect-ratio: 2/1;
+            touch-action: none; /* Prevent scrolling when tapping to jump! */
+        }
+    </style>
+</head>
+<body id="main-body" class="relative w-full h-screen flex flex-col justify-center items-center">
+
+    <!-- TV Static Overlay -->
+    <div class="static-noise"></div>
+
+    <!-- Flashlight Overlay (Controlled by JS) -->
+    <div id="flashlight"></div>
+
+    <!-- Custom Cursor -->
+    <div id="custom-cursor"></div>
+
+    <!-- Background Creepy Eye Container -->
+    <div class="absolute inset-0 flex justify-center items-center z-0 opacity-20 pointer-events-none">
+        <svg id="creepy-eye" width="400" height="200" viewBox="0 0 200 100">
+            <!-- Eye outline -->
+            <path class="sclera" d="M10,50 Q100,-10 190,50 Q100,110 10,50 Z" />
+            <!-- Iris & Pupil group that will move -->
+            <g id="eyeball">
+                <circle class="iris" cx="100" cy="50" r="25" />
+                <circle class="pupil" cx="100" cy="50" r="10" />
+                <!-- Glint -->
+                <circle fill="white" opacity="0.3" cx="108" cy="42" r="3" />
+            </g>
+        </svg>
+    </div>
+
+    <!-- Dust particles container -->
+    <div id="particles" class="absolute inset-0 z-0 pointer-events-none overflow-hidden"></div>
+
+    <!-- Main Content -->
+    <main class="z-20 flex flex-col items-center text-center p-8 relative">
+        
+        <p class="text-red-900 tracking-[0.5em] text-sm mb-4 uppercase animate-pulse">Do not look behind you</p>
+        
+        <h1 class="font-horror text-5xl sm:text-7xl md:text-9xl mb-2 glitch" data-text="ECHOES OF">ECHOES OF</h1>
+        <h2 class="font-horror text-4xl sm:text-6xl md:text-8xl text-red-700 mb-8 glitch" style="animation-delay: 0.5s;" data-text="THE ABYSS">THE ABYSS</h2>
+        
+        <p class="max-w-lg text-gray-400 text-sm md:text-base leading-relaxed mb-12 border-l-2 border-red-900 pl-4 text-left">
+            They whisper in the dark. The house breathes. Every door you open takes you deeper into your own nightmares. Can you survive the echoes?
+        </p>
+
+        <!-- Interactions -->
+        <div class="flex flex-col sm:flex-row gap-6 items-center">
+            <button id="play-btn" class="btn-horror px-10 py-4 font-bold tracking-widest uppercase text-xl rounded">
+                Play Demo
+            </button>
+            <a href="#" class="text-gray-600 hover:text-red-500 transition-colors text-sm tracking-widest uppercase border-b border-transparent hover:border-red-500 pb-1">
+                Read Lore
+            </a>
+        </div>
+        
+    </main>
+
+    <!-- Footer -->
+    <footer class="absolute bottom-6 z-20 text-xs text-gray-800 tracking-widest">
+        © 2026 ABYSSAL STUDIOS
+    </footer>
+
+    <!-- Jumpscare Container (Hidden initially) -->
+    <div id="jumpscare" class="fixed inset-0 z-[999] hidden flex justify-center items-center bg-black">
+        <!-- Terrifying CSS/SVG Face -->
+        <svg viewBox="0 0 100 100" class="w-full h-full max-w-3xl object-cover">
+            <!-- Blood red background flash -->
+            <rect width="100" height="100" fill="#000" />
+            <circle cx="50" cy="50" r="45" fill="#110000" />
+            <!-- Hollow Eyes -->
+            <ellipse cx="30" cy="40" rx="12" ry="18" fill="#000" />
+            <ellipse cx="70" cy="40" rx="12" ry="18" fill="#000" />
+            <!-- Glowing red dots -->
+            <circle cx="30" cy="40" r="2" fill="red" filter="blur(1px)"/>
+            <circle cx="70" cy="40" r="2" fill="red" filter="blur(1px)"/>
+            <!-- Twisted Mouth -->
+            <path d="M 20 75 Q 50 50 80 75 Q 50 95 20 75" fill="#000" />
+            <!-- Jagged Teeth -->
+            <path d="M 25 75 L 30 65 L 35 75 L 40 68 L 45 75 L 50 65 L 55 75 L 60 68 L 65 75 L 70 65 L 75 75" stroke="red" stroke-width="1" fill="none" />
+            <path d="M 25 75 L 30 85 L 35 75 L 40 82 L 45 75 L 50 85 L 55 75 L 60 82 L 65 75 L 70 85 L 75 75" stroke="red" stroke-width="1" fill="none" />
+        </svg>
+        <h1 class="font-horror text-red-600 text-9xl absolute z-10 animate-pulse text-center pointer-events-none">YOU DIED</h1>
+    </div>
+
+    <!-- Parkour Mini Game (Hidden initially - NOW OUTSIDE JUMPSCARE!) 🎮 -->
+    <div id="game-container" class="hidden fixed inset-0 z-[1000] flex-col items-center justify-center bg-[#050505] p-4">
+        <h2 class="font-horror text-red-500 text-2xl md:text-5xl mb-4 text-center px-4">SURVIVE 10 SECONDS TO SAVE PUNTU!</h2>
+        <canvas id="game-canvas" width="600" height="300" class="cursor-pointer"></canvas>
+        <p class="text-gray-400 mt-6 font-sans text-lg md:text-xl animate-bounce text-center">Tap, Click, or Spacebar anywhere to Jump! 🏃‍♀️💨</p>
+    </div>
+
+    <!-- The Love Screen (Hidden initially) 🧸💕 -->
+    <div id="love-screen" class="fixed inset-0 z-[1001] hidden flex flex-col justify-center items-center bg-pink-100 overflow-hidden" style="cursor: auto !important;">
+        <div id="heart-container" class="absolute inset-0 pointer-events-none"></div>
+        <h1 class="text-4xl md:text-5xl lg:text-7xl font-sans text-pink-600 font-extrabold text-center px-8 drop-shadow-md z-[1002] leading-tight" style="font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;">
+            AWWEEEE MY BABY PUKULI PUNTU LOVES YOU SOOSOSSOS MUCHHHH <br/>🥺💕💘💝💖🧸
+        </h1>
+    </div>
+
+    <script>
+        // Elements
+        const cursor = document.getElementById('custom-cursor');
+        const flashlight = document.getElementById('flashlight');
+        const playBtn = document.getElementById('play-btn');
+        const eyeball = document.getElementById('eyeball');
+        const jumpscare = document.getElementById('jumpscare');
+        const mainBody = document.getElementById('main-body');
+        
+        // New elements for the love screen
+        const loveScreen = document.getElementById('love-screen');
+        const heartContainer = document.getElementById('heart-container');
+        
+        // Parkour game elements 🏃‍♀️
+        const gameContainer = document.getElementById('game-container');
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        let gameLoopId;
+        let isPlaying = false;
+        let frameCount = 0;
+        let obstacles = [];
+        const pukuli = { x: 50, y: 200, width: 30, height: 30, vy: 0, gravity: 0.6, jumpPower: -10.5, grounded: false };
+        let puntu = { active: false, x: 600, y: 250, width: 30, height: 30 }; // Our trapped boy Puntu! 🥺
+
+        let hitFlashAlpha = 0; // For smooth damage flashing!
+        let flickerInt; // Define globally so we can clear it
+
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+
+        // Generate blood particles
+        const particleContainer = document.getElementById('particles');
+        for (let i = 0; i < 20; i++) {
+            let p = document.createElement('div');
+            p.classList.add('particle');
+            p.style.width = Math.random() * 5 + 2 + 'px';
+            p.style.height = p.style.width;
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDelay = Math.random() * 10 + 's';
+            p.style.animationDuration = Math.random() * 10 + 5 + 's';
+            particleContainer.appendChild(p);
+        }
+
+        // Track Movement (Mouse & Touch for Mobile! 📱)
+        function updateHorrorTracking(x, y) {
+            if (isPlaying) return; // Save CPU! Stop tracking the eye during the parkour game!
+
+            mouseX = x;
+            mouseY = y;
+
+            // 1. Move Custom Cursor
+            cursor.style.left = mouseX + 'px';
+            cursor.style.top = mouseY + 'px';
+
+            // 2. Update Flashlight Position
+            // Slightly smaller flashlight on mobile for maximum terror! 🔦
+            let flashlightSize = window.innerWidth < 600 ? 150 : 250;
+            flashlight.style.background = `radial-gradient(circle ${flashlightSize}px at ${mouseX}px ${mouseY}px, transparent 0%, rgba(0, 0, 0, 0.98) 100%)`;
+
+            // 3. Eye Tracking Logic
+            const eyeRect = document.getElementById('creepy-eye').getBoundingClientRect();
+            const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+            const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+            
+            const dx = mouseX - eyeCenterX;
+            const dy = mouseY - eyeCenterY;
+            const angle = Math.atan2(dy, dx);
+            
+            const maxRadius = 15; 
+            const dist = Math.min(Math.sqrt(dx*dx + dy*dy) * 0.05, maxRadius);
+            
+            const moveX = Math.cos(angle) * dist;
+            const moveY = Math.sin(angle) * dist;
+
+            eyeball.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        }
+
+        document.addEventListener('mousemove', (e) => updateHorrorTracking(e.clientX, e.clientY));
+        
+        // Add Touch Support so mobile users can drag their finger to move the flashlight! 👆🔦
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                updateHorrorTracking(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        // Hover effects for links and buttons to change cursor
+        const interactables = document.querySelectorAll('button, a');
+        interactables.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(2.5)';
+                cursor.style.backgroundColor = 'transparent';
+                cursor.style.border = '1px solid red';
+            });
+            el.addEventListener('mouseleave', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursor.style.backgroundColor = 'red';
+                cursor.style.border = 'none';
+            });
+        });
+
+        // Jump Scare Logic! 💀
+        playBtn.addEventListener('click', () => {
+            if (playBtn.disabled) return; // Prevent double clicks from breaking the game!
+            playBtn.disabled = true;
+
+            // Hide cursor and flashlight for maximum shock value
+            cursor.style.display = 'none';
+            flashlight.style.display = 'none';
+            
+            // Add violently shaking class to body
+            mainBody.classList.add('shake');
+            
+            // HUGE Blinding flash before the jumpscare! 💥
+            let flashOverlay = document.createElement('div');
+            flashOverlay.className = 'fixed inset-0 bg-white z-[9999] transition-opacity duration-500';
+            document.body.appendChild(flashOverlay);
+            
+            setTimeout(() => {
+                flashOverlay.style.opacity = '0';
+            }, 50);
+            
+            // Wait just a tiny bit, then trigger the scary face
+            setTimeout(() => {
+                flashOverlay.remove();
+                jumpscare.classList.remove('hidden');
+                
+                // Flickering effect for jumpscare with intense red flashes! 🩸
+                let flickers = 0;
+                flickerInt = setInterval(() => {
+                    jumpscare.style.opacity = Math.random() > 0.5 ? '1' : '0.2';
+                    jumpscare.style.backgroundColor = Math.random() > 0.7 ? '#500' : '#000'; // Flash dark red!
+                    flickers++;
+                    if(flickers > 40) {
+                        clearInterval(flickerInt);
+                        jumpscare.style.opacity = '1';
+                        jumpscare.style.backgroundColor = 'black';
+                    }
+                }, 50);
+
+                // Play audio context (Beep/Noise generator since external sound links might break)
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    const audioCtx = new AudioContext(); // Fixed potential scoping bug here!
+                    
+                    // Horrible distorted bass noise
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(40, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.5);
+                    
+                    gain.gain.setValueAtTime(1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 1.5);
+                } catch(e) {
+                    console.log("Audio not supported or blocked");
+                }
+
+                // AUTO-TRANSITION TO PARKOUR GAME AFTER 2.5 SECONDS! 🏃‍♀️💨
+                setTimeout(() => {
+                    // 1. Kill the horror vibe completely so we can see the game! 🛑
+                    clearInterval(flickerInt);
+                    jumpscare.classList.add('hidden'); // This works perfectly now that gameContainer is separated!
+                    mainBody.classList.remove('shake');
+                    document.querySelector('.static-noise').style.display = 'none';
+                    document.getElementById('flashlight').style.display = 'none';
+                    document.getElementById('particles').style.display = 'none';
+                    cursor.style.display = 'none';
+
+                    // 2. Show the game container!
+                    gameContainer.classList.remove('hidden');
+                    gameContainer.classList.add('flex');
+                    
+                    // Start the game! 🎮
+                    isPlaying = true;
+                    frameCount = 0;
+                    obstacles = [];
+                    pukuli.y = 200;
+                    pukuli.vy = 0;
+                    puntu = { active: false, x: 600, y: 250, width: 30, height: 30 }; // Reset Puntu!
+                    gameLoop();
+                }, 2500);
+
+            }, 800);
+        });
+
+        // --- PARKOUR GAME LOGIC 🏃‍♀️💨 ---
+        
+        // Listeners attached to WINDOW so you can tap ANYWHERE to jump!
+        function jump(e) {
+            // Prevent default only on touch to stop mobile screen scrolling
+            if (e && e.type === 'touchstart' && e.cancelable) e.preventDefault(); 
+            
+            if (pukuli.grounded && isPlaying) {
+                pukuli.vy = pukuli.jumpPower;
+                pukuli.grounded = false;
+            }
+        }
+
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') jump(e); });
+        window.addEventListener('mousedown', jump);
+        window.addEventListener('touchstart', jump, { passive: false });
+
+        function gameLoop() {
+            if (!isPlaying) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Background Text "COMPLETE TO SAVE PUNTU" (Brightened slightly)
+            ctx.fillStyle = "rgba(180, 10, 10, 0.5)";
+            ctx.font = "40px 'Creepster', cursive";
+            ctx.textAlign = "center";
+            ctx.fillText("COMPLETE TO SAVE PUNTU", canvas.width/2, canvas.height/2 + 15);
+
+            // Pukuli Physics 🩷
+            pukuli.vy += pukuli.gravity;
+            pukuli.y += pukuli.vy;
+            
+            // Floor collision
+            if (pukuli.y + pukuli.height >= canvas.height - 20) {
+                pukuli.y = canvas.height - 20 - pukuli.height;
+                pukuli.grounded = true;
+                pukuli.vy = 0;
+            }
+
+            // Draw Ground
+            ctx.fillStyle = "#222";
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+            // Draw Pukuli (Cute pink square with neon glow!) 🥺✨
+            ctx.shadowColor = "#ff69b4";
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = "#ff69b4"; // Hot pink
+            ctx.fillRect(pukuli.x, pukuli.y, pukuli.width, pukuli.height);
+            ctx.shadowBlur = 0; // Turn off glow for face
+            
+            // Pukuli's Adorable Face
+            ctx.fillStyle = "white"; 
+            ctx.fillRect(pukuli.x + 4, pukuli.y + 6, 8, 8); // Left eye bg
+            ctx.fillRect(pukuli.x + 18, pukuli.y + 6, 8, 8); // Right eye bg
+            ctx.fillStyle = "black";
+            ctx.fillRect(pukuli.x + 6, pukuli.y + 8, 4, 4); // Left pupil
+            ctx.fillRect(pukuli.x + 20, pukuli.y + 8, 4, 4); // Right pupil
+            ctx.fillStyle = "#ff1493"; // Deep pink mouth
+            ctx.fillRect(pukuli.x + 10, pukuli.y + 20, 10, 4); // Mouth
+
+            // Obstacle Spawner (Red Spikes!) 🩸
+            // Stop spawning spikes near the end so Puntu can safely appear!
+            if (frameCount < 480 && frameCount % 75 === 0) {
+                let obsHeight = 25 + Math.random() * 35;
+                obstacles.push({ x: canvas.width, y: canvas.height - 20 - obsHeight, width: 25, height: obsHeight });
+            }
+
+            // Move and Draw Obstacles
+            ctx.shadowColor = "#ff0000";
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = "#ff0000"; // Red spikes
+            
+            for (let i = 0; i < obstacles.length; i++) {
+                let obs = obstacles[i];
+                obs.x -= 7; // Speed of the spikes
+                
+                // Draw jagged spike
+                ctx.beginPath();
+                ctx.moveTo(obs.x, obs.y + obs.height);
+                ctx.lineTo(obs.x + obs.width/2, obs.y);
+                ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                ctx.fill();
+
+                // Collision Detection! (Oh no!) 😭
+                if (pukuli.x < obs.x + obs.width - 5 &&
+                    pukuli.x + pukuli.width > obs.x + 5 &&
+                    pukuli.y < obs.y + obs.height &&
+                    pukuli.y + pukuli.height > obs.y + 5) {
+                    // HIT! Restart progress!
+                    frameCount = 0;
+                    obstacles = [];
+                    puntu = { active: false, x: 600, y: 250, width: 30, height: 30 }; // Reset Puntu!
+                    pukuli.y = canvas.height - 20 - pukuli.height; // Slam Pukuli back to ground
+                    pukuli.vy = 0;
+                    hitFlashAlpha = 0.5; // Trigger smooth red damage flash!
+                }
+            }
+            ctx.shadowBlur = 0; // Turn glow off
+
+            // Clean up off-screen obstacles
+            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+
+            // Draw smooth damage flash! 🩸✨
+            if (hitFlashAlpha > 0) {
+                ctx.fillStyle = `rgba(255, 0, 0, ${hitFlashAlpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                hitFlashAlpha -= 0.02; // Fade out slowly
+            }
+
+            // --- PUNTU IN A CAGE LOGIC (THE FINISH LINE!) 🥺🔒 ---
+            if (frameCount >= 500) {
+                puntu.active = true;
+            }
+
+            if (puntu.active) {
+                puntu.x -= 4; // Puntu slides in to be rescued!
+                
+                // Draw Puntu (Cute blue square with glow!) 💙
+                ctx.shadowColor = "#00bfff";
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = "#00bfff"; 
+                ctx.fillRect(puntu.x, puntu.y, puntu.width, puntu.height);
+                ctx.shadowBlur = 0;
+
+                // Puntu's sad little face 😭
+                ctx.fillStyle = "white"; 
+                ctx.fillRect(puntu.x + 4, puntu.y + 6, 8, 8); // eyes
+                ctx.fillRect(puntu.x + 18, puntu.y + 6, 8, 8);
+                ctx.fillStyle = "black";
+                ctx.fillRect(puntu.x + 6, puntu.y + 8, 4, 4); // pupils
+                ctx.fillRect(puntu.x + 20, puntu.y + 8, 4, 4);
+                ctx.fillStyle = "#005a7a"; 
+                ctx.fillRect(puntu.x + 10, puntu.y + 22, 10, 4); // Sad mouth
+
+                // Draw the Cage over Puntu ⛓️
+                ctx.strokeStyle = "#888";
+                ctx.lineWidth = 4;
+                // Main cage box
+                ctx.strokeRect(puntu.x - 10, puntu.y - 60, puntu.width + 20, puntu.height + 60);
+                // Cage bars
+                for(let i = 1; i <= 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(puntu.x - 10 + i * 12.5, puntu.y - 60);
+                    ctx.lineTo(puntu.x - 10 + i * 12.5, puntu.y + puntu.height);
+                    ctx.stroke();
+                }
+
+                // Rescue collision! Pukuli touches Puntu's cage! 💥💞
+                // Made hitbox a little more forgiving so you always win!
+                if (pukuli.x + pukuli.width >= puntu.x - 20) {
+                    isPlaying = false;
+                    showLoveScreen();
+                    return;
+                }
+            }
+
+            // Progress tracking (10 seconds at ~60fps = 600 frames)
+            frameCount++;
+            const targetFrames = 600;
+            let progress = Math.min(frameCount / targetFrames, 1);
+            
+            // Draw Progress Bar at top
+            ctx.fillStyle = "#222";
+            ctx.fillRect(0, 0, canvas.width, 10);
+            ctx.fillStyle = "#ff69b4";
+            ctx.fillRect(0, 0, canvas.width * progress, 10);
+
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // The Switcheroo to Love Town! 💖🚂
+        function showLoveScreen() {
+            // 1. Kill the horror vibe completely 🛑
+            clearInterval(flickerInt);
+            jumpscare.classList.add('hidden');
+            gameContainer.classList.remove('flex'); // Remove flex so it actually hides
+            gameContainer.classList.add('hidden');
+            mainBody.classList.remove('shake');
+            document.querySelector('.static-noise').style.display = 'none';
+            document.getElementById('flashlight').style.display = 'none';
+            document.getElementById('particles').style.display = 'none';
+            cursor.style.display = 'none'; // bye bye blood drop!
+            
+            // 2. Bring on the love! 💘
+            loveScreen.classList.remove('hidden');
+            loveScreen.classList.add('flex');
+            document.body.style.cursor = 'default'; // Restore normal mouse
+            document.body.style.backgroundColor = '#fce7f3'; // pink-100
+
+            // 3. Spawn a massive explosion of floating hearts! 💕✨
+            const emojis = ['💖', '💕', '💘', '💝', '💗', '💓', '🧸', '✨'];
+            for(let i = 0; i < 40; i++) {
+                let heart = document.createElement('div');
+                heart.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+                heart.classList.add('heart-float');
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.animationDelay = Math.random() * 2 + 's';
+                heart.style.animationDuration = Math.random() * 4 + 2 + 's';
+                heart.style.fontSize = (Math.random() * 3 + 1.5) + 'rem';
+                heartContainer.appendChild(heart);
+            }
+        }
+
+    </script>
+</body>
+</html>

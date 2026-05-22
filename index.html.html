@@ -607,8 +607,8 @@
                     let orbSize = 25;
                     let orbY = 30 + Math.random() * 60; // Spawns high in the sky!
                     
-                    // Orbs fly a bit slower so they linger and drop more bombs! 🦅
-                    obstacles.push({ type: 'orb', x: canvas.width, y: orbY, width: orbSize, height: orbSize, speed: currentSpeed * 0.55, dropTimer: 0 });
+                    // Orbs fly a bit slower so they linger! 🦅
+                    obstacles.push({ type: 'orb', x: canvas.width, y: orbY, width: orbSize, height: orbSize, speed: currentSpeed * 0.55 });
                     
                     let minOrbGap = 70;
                     let maxOrbGap = 130 - Math.floor(frameCount / 40);
@@ -649,35 +649,15 @@
                     ctx.beginPath();
                     ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/4, 0, Math.PI * 2);
                     ctx.fill();
-
-                    // 💣 DROP PROJECTILES! The Orb attacks! 
-                    obs.dropTimer++;
-                    if (obs.dropTimer > 40) { // Drops a bomb roughly every second
-                        obs.dropTimer = 0;
-                        obstacles.push({ type: 'projectile', x: obs.x + obs.width/2 - 6, y: obs.y + obs.height, width: 12, height: 12, vy: 5.5 });
-                    }
-
-                } else if (obs.type === 'projectile') {
-                    obs.y += obs.vy; // Fall straight down! 🩸
-                    if (isDesktop) {
-                        ctx.shadowColor = "#ff0000";
-                        ctx.shadowBlur = 10;
-                    }
-                    ctx.fillStyle = "#ff0000";
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height); // Blood square
                 }
 
                 ctx.shadowBlur = 0; // Turn glow off to save CPU
 
                 // Collision Detection! (Oh no!) 😭
-                // Adjusted shrink size dynamically so tiny projectiles still hurt!
-                let shrinkX = obs.type === 'projectile' ? 1 : 5;
-                let shrinkY = obs.type === 'projectile' ? 1 : 5;
-
-                if (pukuli.x < obs.x + obs.width - shrinkX &&
-                    pukuli.x + pukuli.width > obs.x + shrinkX &&
-                    pukuli.y < obs.y + obs.height - shrinkY &&
-                    pukuli.y + pukuli.height > obs.y + shrinkY) {
+                if (pukuli.x < obs.x + obs.width - 5 &&
+                    pukuli.x + pukuli.width > obs.x + 5 &&
+                    pukuli.y < obs.y + obs.height - 5 &&
+                    pukuli.y + pukuli.height > obs.y + 5) {
                     
                     // HIT! Restart progress!
                     frameCount = 0;
@@ -691,8 +671,8 @@
                 }
             }
 
-            // Clean up off-screen obstacles AND fallen projectiles
-            obstacles = obstacles.filter(obs => obs.x + obs.width > 0 && obs.y < canvas.height);
+            // Clean up off-screen obstacles
+            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
 
             // Draw smooth damage flash! 🩸✨
             if (hitFlashAlpha > 0) {

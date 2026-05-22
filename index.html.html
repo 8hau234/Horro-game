@@ -539,6 +539,9 @@
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
+            // MOBILE PERFORMANCE FIX: Only use heavy canvas glows on desktop! 📱🔋
+            const isDesktop = window.innerWidth > 768;
+            
             // Draw Background Text "COMPLETE TO SAVE PUNTU" (Brightened slightly)
             ctx.fillStyle = "rgba(180, 10, 10, 0.5)";
             ctx.font = "40px 'Creepster', cursive";
@@ -560,12 +563,14 @@
             ctx.fillStyle = "#222";
             ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
 
-            // Draw Pukuli (Cute pink square with neon glow!) 🥺✨
-            ctx.shadowColor = "#ff69b4";
-            ctx.shadowBlur = 15;
+            // Draw Pukuli (Cute pink square with optional neon glow!) 🥺✨
+            if (isDesktop) {
+                ctx.shadowColor = "#ff69b4";
+                ctx.shadowBlur = 15;
+            }
             ctx.fillStyle = "#ff69b4"; // Hot pink
             ctx.fillRect(pukuli.x, pukuli.y, pukuli.width, pukuli.height);
-            ctx.shadowBlur = 0; // Turn off glow for face
+            ctx.shadowBlur = 0; // Turn off glow for face details to save CPU
             
             // Pukuli's Adorable Face
             ctx.fillStyle = "white"; 
@@ -583,20 +588,23 @@
                 framesUntilNextSpike--;
                 if (framesUntilNextSpike <= 0) {
                     let obsHeight = 30 + Math.random() * 45; // Taller spikes!
-                    // SLIGHTLY SLOWER SPEED LOGIC! 📉
-                    let currentSpeed = 5.5 + (frameCount / 350); 
+                    
+                    // SPEED TWEAK: Slightly faster base speed (6.0 instead of 5.5) but still fair! 🏎️💨
+                    let currentSpeed = 6.0 + (frameCount / 300); 
                     obstacles.push({ x: canvas.width, y: canvas.height - 20 - obsHeight, width: 20 + Math.random() * 15, height: obsHeight, speed: currentSpeed });
                     
-                    // WIDER GAPS SO IT'S EASIER TO BREATHE! 😮‍💨
-                    let minGap = 45; 
-                    let maxGap = 95 - Math.floor(frameCount / 40); 
+                    // GAP TWEAK: Adjusted gaps to match the new speed! 📏
+                    let minGap = 40; 
+                    let maxGap = 85 - Math.floor(frameCount / 35); 
                     framesUntilNextSpike = minGap + Math.random() * Math.max(10, (maxGap - minGap));
                 }
             }
 
             // Move and Draw Obstacles
-            ctx.shadowColor = "#ff0000";
-            ctx.shadowBlur = 10;
+            if (isDesktop) {
+                ctx.shadowColor = "#ff0000";
+                ctx.shadowBlur = 10;
+            }
             ctx.fillStyle = "#ff0000"; // Red spikes
             
             for (let i = 0; i < obstacles.length; i++) {
@@ -625,7 +633,7 @@
                     hitFlashAlpha = 0.5; // Trigger smooth red damage flash!
                 }
             }
-            ctx.shadowBlur = 0; // Turn glow off
+            ctx.shadowBlur = 0; // Turn glow off to save CPU
 
             // Clean up off-screen obstacles
             obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
@@ -645,9 +653,11 @@
             if (puntu.active) {
                 puntu.x -= 4; // Puntu slides in to be rescued!
                 
-                // Draw Puntu (Cute blue square with glow!) 💙
-                ctx.shadowColor = "#00bfff";
-                ctx.shadowBlur = 15;
+                // Draw Puntu (Cute blue square with optional glow!) 💙
+                if (isDesktop) {
+                    ctx.shadowColor = "#00bfff";
+                    ctx.shadowBlur = 15;
+                }
                 ctx.fillStyle = "#00bfff"; 
                 ctx.fillRect(puntu.x, puntu.y, puntu.width, puntu.height);
                 ctx.shadowBlur = 0;
